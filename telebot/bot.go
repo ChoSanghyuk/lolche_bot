@@ -19,7 +19,7 @@ func NewTeleBot(token string, chatId int64) (*TeleBot, error) {
 	if err != nil {
 		return nil, err
 	}
-	bot.Debug = true
+	// bot.Debug = true
 
 	return &TeleBot{
 		bot:    bot,

@@ -12,7 +12,7 @@ type Storage struct {
 }
 
 func NewStorage() (*Storage, error) {
-	dsn := "root:root@tcp(127.0.0.1:3300)/lolche?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:root@tcp(127.0.0.1:3306)/lolche?charset=utf8mb4&parseTime=True&loc=Local"
 	sqlDB, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
