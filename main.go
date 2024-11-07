@@ -41,6 +41,14 @@ func main() {
 		select {
 		case msg := <-chReq:
 			switch msg {
+			case "help":
+				chMsg <- `
+				/mode
+				/switch
+				/update
+				/reset
+				/done
+				`
 			case "mode":
 				if isMain {
 					chMsg <- "정규 모드"
