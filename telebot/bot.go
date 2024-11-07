@@ -56,6 +56,14 @@ func (t TeleBot) Run(offset int, chReq chan<- string, chMsg <-chan string, chDec
 		if update.Message != nil {
 
 			switch update.Message.Text {
+			case "/help":
+				chReq <- `
+				/mode
+				/switch
+				/update
+				/reset
+				/done
+				`
 			case "/mode": // 현재 모드
 				chReq <- "mode"
 			case "/switch": // 모드 전환
