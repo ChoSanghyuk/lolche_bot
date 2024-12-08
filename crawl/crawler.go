@@ -9,20 +9,30 @@ import (
 )
 
 type Crawler struct {
+	mainUrl string
+	pbeUrl  string
+	cssPath string
+}
+
+func New() Crawler {
+
+	main := "https://lolchess.gg/meta"
+	pbe := "https://lolchess.gg/meta?pbe=true"
+	css := "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-35tzvc.emls75t4 > div"
+
+	return Crawler{
+		mainUrl: main,
+		pbeUrl:  pbe,
+		cssPath: css,
+	}
 }
 
 func (c Crawler) CurrentMeta() ([]string, error) {
-	url := "https://lolchess.gg/meta"
-	css := "#__next > div > div.css-1x48m3k.eetc6ox0 > div.content > div > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-35tzvc.emls75t4 > div"
-
-	return c.crawl(url, css)
+	return c.crawl(c.mainUrl, c.cssPath)
 }
 
 func (c Crawler) PbeMeta() ([]string, error) {
-	url := "https://lolchess.gg/meta?pbe=true"
-	css := "#__next > div > div.css-1x48m3k.eetc6ox0 > div.content > div > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-35tzvc.emls75t4 > div"
-
-	return c.crawl(url, css)
+	return c.crawl(c.pbeUrl, c.cssPath)
 }
 
 func (s Crawler) crawl(url string, cssPath string) ([]string, error) {
