@@ -144,5 +144,4 @@ func (s Storage) SaveMode(isMain bool) {
 	} else {
 		s.db.Updates(m)
 	}
-
 }

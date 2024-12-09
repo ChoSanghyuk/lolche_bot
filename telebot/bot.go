@@ -68,6 +68,8 @@ func (t TeleBot) Run(offset int, chReq chan<- string, chMsg <-chan string, chDec
 				chReq <- "reset"
 			case "/done":
 				chReq <- "done"
+			case "/fix":
+				chReq <- "fix"
 			}
 		}
 

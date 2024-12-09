@@ -48,6 +48,7 @@ func main() {
 				/update
 				/reset
 				/done
+				/fix
 				`
 			case "mode":
 				if isMain {
@@ -69,10 +70,10 @@ func main() {
 
 				if isMain {
 					decLi, err = crawler.CurrentMeta() // todo 여기서의 error 처리
-					doneLi, err = db.AllMain()
+					doneLi, _ = db.AllMain()
 				} else {
 					decLi, err = crawler.PbeMeta() // todo 여기서의 error 처리
-					doneLi, err = db.AllPbe()
+					doneLi, _ = db.AllPbe()
 				}
 				if err != nil {
 					chMsg <- fmt.Sprintf("오류 발생 %s", err.Error())
@@ -110,6 +111,11 @@ func main() {
 						chMsg <- fmt.Sprintf("PBE 모드 기록 삭제 오류 발생. %s", err.Error())
 					}
 					chMsg <- "PBE 모드 기록 삭제 완료"
+				}
+			case "fix":
+				err = crawler.UpdateCssPath("")
+				if err != nil {
+					chMsg <- fmt.Sprintf("fix 실패. %s", err.Error())
 				}
 			}
 

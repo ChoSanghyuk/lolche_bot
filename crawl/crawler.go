@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -15,27 +16,66 @@ type Crawler struct {
 }
 
 func New() Crawler {
-
-	main := "https://lolchess.gg/meta"
-	pbe := "https://lolchess.gg/meta?pbe=true"
-	css := "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-35tzvc.emls75t4 > div"
-
-	return Crawler{
-		mainUrl: main,
-		pbeUrl:  pbe,
-		cssPath: css,
+	crawler := Crawler{
+		mainUrl: "https://lolchess.gg/meta",
+		pbeUrl:  "https://lolchess.gg/meta?pbe=true",
 	}
+
+	err := crawler.UpdateCssPath("")
+	if err != nil {
+		crawler.cssPath = "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-35tzvc.emls75t4 > div"
+	}
+
+	return crawler
 }
 
 func (c Crawler) CurrentMeta() ([]string, error) {
-	return c.crawl(c.mainUrl, c.cssPath)
+	dec, err := crawl(c.mainUrl, c.cssPath)
+	if err != nil {
+		return nil, fmt.Errorf("크롤링 실패. %w", err)
+	}
+	if len(dec) == 0 {
+		return nil, fmt.Errorf("크롤링 조회 결과 없음")
+	}
+	return dec, nil
 }
 
 func (c Crawler) PbeMeta() ([]string, error) {
-	return c.crawl(c.pbeUrl, c.cssPath)
+	dec, err := crawl(c.pbeUrl, c.cssPath)
+	if err != nil {
+		return nil, fmt.Errorf("크롤링 실패. %w", err)
+	}
+	if len(dec) == 0 {
+		return nil, fmt.Errorf("크롤링 조회 결과 없음")
+	}
+	return dec, nil
 }
 
-func (s Crawler) crawl(url string, cssPath string) ([]string, error) {
+func (c *Crawler) UpdateCssPath(target string) error {
+
+	if target == "" {
+		target = "초반 빌드업 요약"
+	}
+	path, err := cssPath(c.mainUrl, target)
+	if err != nil {
+		return fmt.Errorf("css 경로 갱신 실패. %w", err)
+	}
+
+	sl, err := crawl(c.mainUrl, path)
+	if err != nil {
+		return fmt.Errorf("css 경로로 조회 실패. path : %s, error: %w", path, err)
+	}
+
+	if len(sl) == 0 {
+		return fmt.Errorf("잘못된 css 경로(조회된 덱 없음). path : %s, error: %w", path, err)
+	}
+
+	c.cssPath = path
+
+	return nil
+}
+
+func crawl(url string, cssPath string) ([]string, error) {
 
 	// Send the request
 	res, err := http.Get(url)
@@ -58,6 +98,7 @@ func (s Crawler) crawl(url string, cssPath string) ([]string, error) {
 	}
 
 	// fmt.Println(doc.Text())
+	// fmt.Println(strings.Repeat("*", 100))
 
 	var v []string
 	// Find the elements by the CSS selector
@@ -67,4 +108,73 @@ func (s Crawler) crawl(url string, cssPath string) ([]string, error) {
 	})
 
 	return v, nil
+}
+
+func cssPath(url string, target string) (string, error) {
+
+	// Send the request
+	res, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("error making request\n%w", err)
+	}
+
+	defer res.Body.Close()
+
+	// Check the response status
+	if res.StatusCode != 200 {
+		body, _ := io.ReadAll(res.Body)
+		return "", fmt.Errorf("status code error: %d %s %s", res.StatusCode, res.Status, body)
+	}
+
+	// Create a goquery document from the response body
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return "", fmt.Errorf("error creating document\n%w", err)
+	}
+
+	var path string
+	doc.Find("div:not(:has(*))").Each(func(i int, s *goquery.Selection) {
+		if strings.Contains(s.Text(), target) {
+			// Construct the CSS path
+			path = constructCSSPath(s)
+			// fmt.Printf("Found text: %s\nCSS Path: %s\n", target, path)
+		}
+	})
+	return path, nil
+
+}
+
+func constructCSSPath(selection *goquery.Selection) string {
+	path := ""
+
+	for len(selection.Nodes) > 0 {
+		node := selection.Nodes[0]
+		if node == nil {
+			break
+		}
+
+		tag := goquery.NodeName(selection)
+		if tag == "" {
+			break
+		}
+
+		id, _ := selection.Attr("id")
+		if id != "" {
+			path = fmt.Sprintf("%s#%s", tag, id) + " > " + path
+			break
+		}
+
+		classes, _ := selection.Attr("class")
+		classSelector := ""
+		if classes != "" {
+			classSelector = "." + strings.ReplaceAll(classes, " ", ".")
+		}
+
+		path = fmt.Sprintf("%s%s", tag, classSelector) + " > " + path
+
+		selection = selection.Parent()
+	}
+
+	// Trim the trailing " > "
+	return strings.TrimSuffix(path, " > ")
 }
