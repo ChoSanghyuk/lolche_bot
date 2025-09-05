@@ -2,6 +2,8 @@ package config
 
 import (
 	_ "embed"
+	"lolcheBot/db"
+	t "lolcheBot/telebot"
 	"strconv"
 
 	"gopkg.in/yaml.v3"
@@ -15,6 +17,14 @@ type Config struct {
 		Token  string `yaml:"token"`
 		ChatId string `yaml:"chatId"`
 	} `yaml:"telegram"`
+
+	Db struct {
+		User     string `yaml:"user"`
+		Password string `yaml:"pw"`
+		IP       string `yaml:"ip"`
+		Port     string `yaml:"port"`
+		Scheme   string `yaml:"scheme"`
+	} `yaml:"db"`
 }
 
 func NewConfig() (*Config, error) {
@@ -27,7 +37,18 @@ func NewConfig() (*Config, error) {
 	return &ConfigInfo, nil
 }
 
-func (c Config) Telebot() (token string, chatId int64) {
-	chatId, _ = strconv.ParseInt(c.TeleBot.ChatId, 10, 64)
-	return c.TeleBot.Token, chatId
+func (c Config) Telebot() *t.TeleBotConfig {
+	chatId, _ := strconv.ParseInt(c.TeleBot.ChatId, 10, 64)
+	return t.NewTeleBotConfig(c.TeleBot.Token, chatId)
+}
+
+func (c Config) StorageConfig() *db.StorageConfig {
+	return db.NewStorageConfig(
+		c.Db.User,
+		c.Db.Password,
+		c.Db.IP,
+		c.Db.Port,
+		c.Db.Scheme,
+	)
+
 }

@@ -20,7 +20,7 @@ func main() {
 		panic(err)
 	}
 	crawler := crawl.New()
-	db, err := db.NewStorage()
+	db, err := db.NewStorage(conf.StorageConfig())
 	if err != nil {
 		panic(err)
 	}

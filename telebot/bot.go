@@ -13,9 +13,9 @@ type TeleBot struct {
 	chatId int64
 }
 
-func NewTeleBot(token string, chatId int64) (*TeleBot, error) {
+func NewTeleBot(conf *TeleBotConfig) (*TeleBot, error) {
 
-	bot, err := tgbotapi.NewBotAPI(token)
+	bot, err := tgbotapi.NewBotAPI(conf.token)
 	if err != nil {
 		return nil, err
 	}
@@ -23,8 +23,21 @@ func NewTeleBot(token string, chatId int64) (*TeleBot, error) {
 
 	return &TeleBot{
 		bot:    bot,
-		chatId: chatId,
+		chatId: conf.chatId,
 	}, nil
+}
+
+type TeleBotConfig struct {
+	token  string
+	chatId int64
+}
+
+func NewTeleBotConfig(token string, chatId int64) *TeleBotConfig {
+
+	return &TeleBotConfig{
+		token:  token,
+		chatId: chatId,
+	}
 }
 
 /*

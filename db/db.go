@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -11,8 +12,8 @@ type Storage struct {
 	db *gorm.DB
 }
 
-func NewStorage() (*Storage, error) {
-	dsn := "root:root@tcp(127.0.0.1:3306)/lolche?charset=utf8mb4&parseTime=True&loc=Local"
+func NewStorage(conf *StorageConfig) (*Storage, error) {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", conf.user, conf.password, conf.ip, conf.port, conf.scheme)
 	sqlDB, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -25,9 +26,32 @@ func NewStorage() (*Storage, error) {
 		return nil, err
 	}
 
+	err = db.AutoMigrate(&main{}, &pbe{}, &mode{})
+	if err != nil {
+		panic("failed to migrate database")
+	}
+
 	return &Storage{
 		db: db,
 	}, nil
+}
+
+type StorageConfig struct {
+	user     string
+	password string
+	ip       string
+	port     string
+	scheme   string
+}
+
+func NewStorageConfig(user string, password string, ip string, port string, scheme string) *StorageConfig {
+	return &StorageConfig{
+		user:     user,
+		password: password,
+		ip:       ip,
+		port:     port,
+		scheme:   scheme,
+	}
 }
 
 func (s Storage) SaveMain(name string) error {
