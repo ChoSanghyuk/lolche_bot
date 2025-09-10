@@ -2,8 +2,8 @@ package config
 
 import (
 	_ "embed"
+	t "lolcheBot"
 	"lolcheBot/db"
-	t "lolcheBot/telebot"
 	"strconv"
 
 	"gopkg.in/yaml.v3"

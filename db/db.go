@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"lolcheBot"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -26,9 +27,15 @@ func NewStorage(conf *StorageConfig) (*Storage, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&main{}, &pbe{}, &mode{})
-	if err != nil {
-		panic("failed to migrate database")
+	if !db.Migrator().HasTable("modes") {
+		err = db.AutoMigrate(&main{}, &pbe{}, &mode{})
+		if err != nil {
+			panic("failed to migrate database")
+		}
+		db.Model(&mode{}).Create(&mode{ // default 값은 메인모드.
+			IsMain: true,
+		})
+
 	}
 
 	return &Storage{
@@ -54,7 +61,15 @@ func NewStorageConfig(user string, password string, ip string, port string, sche
 	}
 }
 
-func (s Storage) SaveMain(name string) error {
+func (s Storage) Save(mode lolcheBot.Mode, name string) error {
+	if mode == lolcheBot.MainMode {
+		return s.saveMain(name)
+	} else {
+		return s.savePbe(name)
+	}
+}
+
+func (s Storage) saveMain(name string) error {
 
 	var cnt int64
 	s.db.Model(&main{}).Where("name = ?", name).Count(&cnt)
@@ -72,7 +87,7 @@ func (s Storage) SaveMain(name string) error {
 	return nil
 }
 
-func (s Storage) SavePbe(name string) error {
+func (s Storage) savePbe(name string) error {
 
 	var cnt int64
 	s.db.Model(&pbe{}).Where("name = ?", name).Count(&cnt)
@@ -89,7 +104,16 @@ func (s Storage) SavePbe(name string) error {
 	return nil
 }
 
-func (s Storage) DeleteAllMain() error {
+func (s Storage) DeleteAll(mode lolcheBot.Mode) error {
+
+	if mode == lolcheBot.MainMode {
+		return s.deleteAllMain()
+	} else {
+		return s.deleteAllPbe()
+	}
+}
+
+func (s Storage) deleteAllMain() error {
 	result := s.db.Unscoped().Where("1 = 1").Delete(&main{})
 	if result.Error != nil {
 		return result.Error
@@ -97,7 +121,7 @@ func (s Storage) DeleteAllMain() error {
 	return nil
 }
 
-func (s Storage) DeleteAllPbe() error {
+func (s Storage) deleteAllPbe() error {
 	result := s.db.Unscoped().Where("1 = 1").Delete(&pbe{}) // memo. Unscopred : deleted_at으로 관리되던 삭제 여부 무시하고 수행. (delete면 싹 다 삭제. select면 deleted_at 되어있어도 조회)
 	if result.Error != nil {
 		return result.Error
@@ -105,7 +129,15 @@ func (s Storage) DeleteAllPbe() error {
 	return nil
 }
 
-func (s Storage) DeleteMain(name string) error {
+func (s Storage) DeleteByName(mode lolcheBot.Mode, name string) error {
+	if mode == lolcheBot.MainMode {
+		return s.deleteMainByName(name)
+	} else {
+		return s.deletePbeByName(name)
+	}
+}
+
+func (s Storage) deleteMainByName(name string) error {
 	result := s.db.Where("name = ?", name).Delete(&main{})
 	if result.Error != nil {
 		return result.Error
@@ -113,7 +145,7 @@ func (s Storage) DeleteMain(name string) error {
 	return nil
 }
 
-func (s Storage) DeletePbe(name string) error {
+func (s Storage) deletePbeByName(name string) error {
 	result := s.db.Where("name = ?", name).Delete(&pbe{})
 	if result.Error != nil {
 		return result.Error
@@ -121,7 +153,15 @@ func (s Storage) DeletePbe(name string) error {
 	return nil
 }
 
-func (s Storage) AllMain() ([]string, error) {
+func (s Storage) All(mode lolcheBot.Mode) ([]string, error) {
+	if mode == lolcheBot.MainMode {
+		return s.allMain()
+	} else {
+		return s.allPbe()
+	}
+}
+
+func (s Storage) allMain() ([]string, error) {
 
 	var mains []main
 
@@ -137,7 +177,7 @@ func (s Storage) AllMain() ([]string, error) {
 	return decs, nil
 }
 
-func (s Storage) AllPbe() ([]string, error) {
+func (s Storage) allPbe() ([]string, error) {
 
 	var pbes []pbe
 
@@ -153,19 +193,21 @@ func (s Storage) AllPbe() ([]string, error) {
 	return decs, nil
 }
 
-func (s Storage) Mode() bool {
+func (s Storage) Mode() lolcheBot.Mode {
 	m := mode{}
 	s.db.Model(&mode{}).Last(&m)
-	return !m.IsPbe // default 값을 false로 하기 위해 main.go에서의 변수명과 반대로 저장
+	return lolcheBot.Mode(m.IsMain) // default 값을 false로 하기 위해 main.go에서의 변수명과 반대로 저장
 }
 
-func (s Storage) SaveMode(isMain bool) {
+func (s Storage) SaveMode(currentMode lolcheBot.Mode) {
+
 	m := mode{}
 	s.db.Last(&m)
-	m.IsPbe = !isMain
+	m.IsMain = bool(currentMode)
 	if m.ID == 0 {
 		s.db.Model(&mode{}).Create(&m)
 	} else {
-		s.db.Updates(m)
+		s.db.Select("*").Updates(&m)
 	}
+
 }

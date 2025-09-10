@@ -21,5 +21,11 @@ func TestMigration(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	s.db.AutoMigrate(&main{}, &pbe{}, &mode{})
+	t.Run("mode", func(t *testing.T) {
+		mode := s.Mode()
+		t.Log(mode.Str())
+		s.SaveMode(!mode)
+		mode = s.Mode()
+		t.Log(mode.Str())
+	})
 }

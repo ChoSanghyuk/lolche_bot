@@ -15,6 +15,6 @@ type pbe struct {
 }
 
 type mode struct {
-	ID    uint
-	IsPbe bool
+	ID     uint
+	IsMain bool
 }
