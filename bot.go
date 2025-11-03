@@ -274,7 +274,7 @@ func makeDecRcmd(decLi []string, doneLi []string) []DecOptMsg {
 	specailIdx := make([]int, 0)
 
 	for i := len(decLi) - 1; i >= 0; i-- {
-		if strings.HasPrefix(decLi[i], "[") && !strings.Contains(decLi[i], "[상징]") && !m[decLi[i]] {
+		if strings.HasPrefix(decLi[i], "[") && !m[decLi[i]] { // && !strings.Contains(decLi[i], "[상징]")
 			specialDec = append(specialDec, decLi[i])
 			specailIdx = append(specailIdx, i+1) // index 보정. 이 숫자로 몇 번째 덱 link 가져오는지 정하기 때문에 css nth-child의 숫자에 맞게 보정
 		} else if !selected && !m[decLi[i]] {
