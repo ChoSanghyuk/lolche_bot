@@ -24,7 +24,7 @@ func New() *Crawler {
 
 	err := crawler.UpdateCssPath("")
 	if err != nil {
-		crawler.cssPath = "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-35tzvc.emls75t4 > div"
+		crawler.cssPath = "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-1fu47ws.emls75t4 > div"
 	}
 
 	return &crawler
