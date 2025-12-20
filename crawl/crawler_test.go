@@ -5,6 +5,7 @@ import (
 	"io"
 	"lolcheBot"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
@@ -15,17 +16,62 @@ import (
 
 div#content-container > section.css-1v8my8o.esg9lhj0 > div.css-s9pipd.e2kj5ne0 > div > div.css-1iudmso.emls75t0 > div.css-1r1x0j5.emls75t1 > div.css-5x9ld.emls75t2 > div.css-35tzvc.emls75t4 > div
 */
-func TestCrawl(t *testing.T) {
+func TestCrawlTextsFromChromedp(t *testing.T) {
 	url := "https://lolchess.gg/meta"
-	css := "div#content-container > section.css-1v8my8o.esg9lhj0 > div.css-s9pipd.e2kj5ne0 > div > div.css-1iudmso.emls75t0 > div.css-1r1x0j5.emls75t1 > div.css-5x9ld.emls75t2 > div.css-35tzvc.emls75t4 > div"
+	css := "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-1fu47ws.emls75t4 > div"
+	targetDeck := "빌지워터 미스 포츈"
 
-	rtn, err := crawlTexts(url, css)
+	// Use the new crawlTextsFromChromedp function
+	deckNames, err := crawlTextsFromChromedp(url, css)
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("Failed to crawl deck names: %v", err)
 	}
-	for _, dec := range rtn {
-		fmt.Println(dec)
+
+	// Print results
+	fmt.Printf("\n=== Found %d deck names ===\n", len(deckNames))
+	for i, name := range deckNames {
+		fmt.Printf("  [%d] %s\n", i, name)
 	}
+
+	// Verify results
+	if len(deckNames) == 0 {
+		t.Error("No deck names found")
+	}
+
+	// Check if "빌지워터 미스 포츈" is in the list
+	foundTarget := false
+	for _, name := range deckNames {
+		if strings.Contains(name, targetDeck) {
+			foundTarget = true
+			break
+		}
+	}
+
+	if !foundTarget {
+		t.Errorf("'%s' not found in deck list. Found decks: %v", targetDeck, deckNames)
+	} else {
+		fmt.Println("\n✓ Successfully found ", targetDeck)
+	}
+}
+
+func TestCrawlTexts(t *testing.T) {
+	url := "https://lolchess.gg/meta"
+	css := "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-1fu47ws.emls75t4 > div"
+
+	// Use the new crawlTextsFromChromedp function
+	deckNames, err := crawlTexts(url, css)
+	if err != nil {
+		t.Fatalf("Failed to crawl deck names: %v", err)
+	}
+
+	if len(deckNames) == 0 {
+		t.Error("No deck names found")
+	}
+
+	for i, name := range deckNames {
+		fmt.Printf("  [%d] %s\n", i, name)
+	}
+
 }
 
 func TestMeta(t *testing.T) {
@@ -64,11 +110,21 @@ func TestDeckUrl(t *testing.T) {
 }
 
 func TestCssPath(t *testing.T) {
-	path, err := cssPath("https://lolchess.gg/meta", "초반 빌드업 요약")
+	// Note: cssPath function searches static HTML for text, but lolchess.gg
+	// loads content dynamically with JavaScript, so this test will not find
+	// deck names in the static HTML. For actual crawling, use chromedp via
+	// TestCrawl or TestPopupCrawl.
+
+	path, err := cssPath("https://lolchess.gg/meta", "빌지워터 미스 포츈")
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Println(path)
+
+	if path == "" {
+		t.Skip("cssPath returned empty - page is dynamically loaded (expected behavior)")
+	} else {
+		fmt.Printf("CSS Path for '빌지워터 미스 포츈': %s\n", path)
+	}
 }
 
 ///builder/guide/32354bc9cb5d579cfaad177dfd9e1eac363fedc9?type=guide
@@ -139,4 +195,34 @@ func TestPopupCrawl(t *testing.T) {
 	}
 }
 
-// 0201816617e16e16419a19915e16b000TFTSet15
+func TestPrintDocs(t *testing.T) {
+	url := "https://lolchess.gg/meta"
+	printDocs(url)
+}
+
+func TestGetDeckMeta(t *testing.T) {
+	url := "https://lolchess.gg/meta"
+	decks, err := GetDeckMeta(url)
+	if err != nil {
+		t.Fatalf("Failed to get deck meta: %v", err)
+	}
+
+	fmt.Printf("\n=== Found %d decks ===\n", len(decks))
+	for i, deck := range decks {
+		fmt.Printf("[%d] %s (key: %s)\n", i, deck.Name, deck.TeamBuilderKey)
+	}
+
+	// Verify we found the target deck
+	found := false
+	for _, deck := range decks {
+		if deck.Name == "빌지워터 미스 포츈" && deck.TeamBuilderKey == "0932c429e79980626aeb3253f102a739ecf9fc6e" {
+			found = true
+			fmt.Printf("\n✓ Successfully found target deck: %s (key: %s)\n", deck.Name, deck.TeamBuilderKey)
+			break
+		}
+	}
+
+	if !found {
+		t.Error("Target deck '빌지워터 미스 포츈' with correct teamBuilderKey not found")
+	}
+}

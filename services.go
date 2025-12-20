@@ -19,6 +19,7 @@ type Stoage interface {
 
 type DeckCrawler interface {
 	Meta(mode Mode) (dec []string, err error)
-	DeckUrl(mode Mode, id string) (string, error)
-	UpdateCssPath(target string) error
+	DeckBuilderUrl(mode Mode, id int) (string, error)
+	// DeckUrl(mode Mode, id string) (string, error)
+	// UpdateCssPath(target string) error
 }

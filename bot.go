@@ -68,8 +68,8 @@ func (t TeleBot) Run() { // channel 받아
 				t.resetJob()
 			case done:
 				t.doneJob()
-			case fix:
-				t.fixJob()
+			// case fix:
+			// 	t.fixJob()
 			default:
 				t.SendMessage("미등록 작업")
 			}
@@ -163,12 +163,12 @@ func (t TeleBot) doneJob() { // todo. 지우기전에 한번 물어봐
 
 }
 
-func (t TeleBot) fixJob() {
-	err := t.dc.UpdateCssPath("")
-	if err != nil {
-		t.SendMessage(fmt.Sprintf("fix 실패. %s", err.Error()))
-	}
-}
+// func (t TeleBot) fixJob() {
+// 	err := t.dc.UpdateCssPath("")
+// 	if err != nil {
+// 		t.SendMessage(fmt.Sprintf("fix 실패. %s", err.Error()))
+// 	}
+// }
 
 func (t TeleBot) restoreJob(update *tgbotapi.Update) {
 
@@ -194,8 +194,13 @@ func (t TeleBot) selectJob(update *tgbotapi.Update) {
 
 	// 여기서는 url 정보 한번 보내고
 	idx := update.CallbackQuery.Data
+	id, err := strconv.Atoi(idx)
+	if err != nil {
+		t.SendMessage("서버 오류 발생. 숫자형이 아닌 덱 id 사용")
+		return
+	}
 	mode := t.stg.Mode()
-	url, err := t.dc.DeckUrl(mode, idx)
+	url, err := t.dc.DeckBuilderUrl(mode, id)
 	if err != nil {
 		t.SendMessage("Deck url 가져오기 오류. " + err.Error())
 	}
@@ -276,12 +281,12 @@ func makeDecRcmd(decLi []string, doneLi []string) []DecOptMsg {
 	for i := len(decLi) - 1; i >= 0; i-- {
 		if strings.HasPrefix(decLi[i], "[") && !m[decLi[i]] { // && !strings.Contains(decLi[i], "[상징]")
 			specialDec = append(specialDec, decLi[i])
-			specailIdx = append(specailIdx, i+1) // index 보정. 이 숫자로 몇 번째 덱 link 가져오는지 정하기 때문에 css nth-child의 숫자에 맞게 보정
+			specailIdx = append(specailIdx, i) // index 보정 필요 없음
 		} else if !selected && !m[decLi[i]] {
 			rtn = append(rtn, DecOptMsg{
 				Title: titleNormalDeck,
 				Rcmds: []string{decLi[i]},
-				Ids:   []int{i + 1}, // index 보정
+				Ids:   []int{i}, // index 보정 필요 없음
 			})
 			selected = true
 		}
