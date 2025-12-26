@@ -15,9 +15,11 @@ import (
 )
 
 type Crawler struct {
-	mainUrl string
-	pbeUrl  string
-	cssPath string
+	mainUrl     string
+	pbeUrl      string
+	cssPath     string
+	deckCache   map[lolcheBot.Mode][]DeckMeta
+	refreshTime map[lolcheBot.Mode]time.Time
 }
 
 func New() *Crawler {
@@ -31,10 +33,20 @@ func New() *Crawler {
 	// 	crawler.cssPath = "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-1fu47ws.emls75t4 > div"
 	// }
 
+	go crawler.cleanCache()
 	return &crawler
 }
 
-func (c Crawler) Meta(mode lolcheBot.Mode) ([]string, error) {
+func (c *Crawler) cleanCache() {
+	for key := range c.deckCache {
+		if len(c.deckCache[key]) != 0 && c.refreshTime[key].Before(time.Now().Add(time.Minute*-5)) {
+			c.deckCache[key] = nil
+		}
+		time.Sleep(10 * time.Minute)
+	}
+}
+
+func (c *Crawler) Meta(mode lolcheBot.Mode) ([]string, error) {
 	var deckMeta []DeckMeta
 	var err error
 	if mode == lolcheBot.MainMode {
@@ -48,27 +60,33 @@ func (c Crawler) Meta(mode lolcheBot.Mode) ([]string, error) {
 	if len(deckMeta) == 0 {
 		return nil, fmt.Errorf("크롤링 조회 결과 없음")
 	}
-	dec := make([]string, len(deckMeta))
+	dec := make([]string, len(c.deckCache))
 	for i, dm := range deckMeta {
 		dec[i] = dm.Name
 	}
+	c.deckCache[mode] = deckMeta
 	return dec, nil
 }
 
-func (c Crawler) DeckBuilderUrl(mode lolcheBot.Mode, id int) (string, error) {
+func (c *Crawler) DeckBuilderUrl(mode lolcheBot.Mode, id int) (string, error) {
 	var deckMeta []DeckMeta
 	var err error
-	if mode == lolcheBot.MainMode {
-		deckMeta, err = GetDeckMeta(c.mainUrl)
+	if len(c.deckCache[mode]) == 0 {
+		if mode == lolcheBot.MainMode {
+			deckMeta, err = GetDeckMeta(c.mainUrl)
+		} else {
+			deckMeta, err = GetDeckMeta(c.pbeUrl)
+		}
+		if err != nil {
+			return "", fmt.Errorf("크롤링 실패. %w", err)
+		}
+		if len(deckMeta) == 0 {
+			return "", fmt.Errorf("크롤링 조회 결과 없음")
+		}
 	} else {
-		deckMeta, err = GetDeckMeta(c.pbeUrl)
+		deckMeta = c.deckCache[mode]
 	}
-	if err != nil {
-		return "", fmt.Errorf("크롤링 실패. %w", err)
-	}
-	if len(deckMeta) == 0 {
-		return "", fmt.Errorf("크롤링 조회 결과 없음")
-	}
+
 	builderKey := deckMeta[id].TeamBuilderKey
 
 	return "https://lolchess.gg/builder/guide/" + builderKey, nil
