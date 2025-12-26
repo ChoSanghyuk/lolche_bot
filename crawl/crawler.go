@@ -23,7 +23,7 @@ type Crawler struct {
 }
 
 func New() *Crawler {
-	crawler := Crawler{
+	crawler := &Crawler{
 		mainUrl: "https://lolchess.gg/meta",
 		pbeUrl:  "https://lolchess.gg/meta?pbe=true",
 	}
@@ -33,14 +33,24 @@ func New() *Crawler {
 	// 	crawler.cssPath = "#content-container > section > div.css-s9pipd.e2kj5ne0 > div > div > div > div.css-5x9ld.emls75t2 > div.css-1fu47ws.emls75t4 > div"
 	// }
 
-	go crawler.cleanCache()
-	return &crawler
+	crawler.deckCache = make(map[lolcheBot.Mode][]DeckMeta)
+	crawler.refreshTime = make(map[lolcheBot.Mode]time.Time)
+
+	go func() {
+		fmt.Println("HELLO1")
+		crawler.cleanCache()
+	}()
+	return crawler
 }
 
 func (c *Crawler) cleanCache() {
-	for key := range c.deckCache {
-		if len(c.deckCache[key]) != 0 && c.refreshTime[key].Before(time.Now().Add(time.Minute*-5)) {
-			c.deckCache[key] = nil
+	for {
+		for key := range c.deckCache {
+			fmt.Println("HELLO2")
+			if len(c.deckCache[key]) != 0 && c.refreshTime[key].Before(time.Now().Add(time.Minute*-5)) {
+				c.deckCache[key] = nil
+				fmt.Println("CLEAR")
+			}
 		}
 		time.Sleep(10 * time.Minute)
 	}
@@ -60,11 +70,12 @@ func (c *Crawler) Meta(mode lolcheBot.Mode) ([]string, error) {
 	if len(deckMeta) == 0 {
 		return nil, fmt.Errorf("크롤링 조회 결과 없음")
 	}
-	dec := make([]string, len(c.deckCache))
+	dec := make([]string, len(deckMeta))
 	for i, dm := range deckMeta {
 		dec[i] = dm.Name
 	}
 	c.deckCache[mode] = deckMeta
+	c.refreshTime[mode] = time.Now()
 	return dec, nil
 }
 
