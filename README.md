@@ -1,6 +1,53 @@
 # Lolchebot
 
+> English version first, Korean version follows below.
 
+## Overview
+
+A Telegram bot that tracks completed decks from the Lolchess (롤체지지) website and notifies you of the next deck to clear when attempting to beat recommended decks sequentially from bottom to top.
+
+## Project Structure
+
+```
+  ├── bot.go                # Lolchebot implementation
+  ├── services.go           # Interfaces used by lolchebot
+  ├── types.go              # Common variables and type definitions
+  ├── cmd/
+  │   └── main.go           # Application entry point
+  ├── config/
+  │   ├── config.go         # Configuration file logic
+  │   └── config.yaml       # Configuration file
+  ├── crawl/
+  │   ├── crawler.go        # Web crawler implementation
+  │   ├── crawler_test.go   # Crawler unit tests
+  └── db/
+      ├── db.go             # Database access implementation
+      ├── db_test.go        # Database unit tests
+      └── model.go          # gorm struct
+```
+
+## Main Features
+
+Interaction with the bot is available through Text Commands and Button Interactions.
+
+Text Commands:
+
+  - /help → `helpJob()` - Returns all available text commands
+  - /mode → `modeJob()` - Returns current mode (main or pbe)
+  - /switch → `switchJob()` - Switch mode (main <=> pre)
+  - /update → `updateJob()` - Crawls recommended decks, filters completed decks, and returns the current deck to play (provides "Normal Deck"/"Augmented Deck" interactive buttons)
+  - /reset → `resetJob()` - Removes all completion history
+  - /done → `doneJob()` - Returns completion history (provides "Completion List" interactive button)
+  - /fix → `fixJob()` - Automatically adjusts deck crawling target CSS path when the website's CSS code changes
+
+  Button Interactions:
+  - "Normal Deck"/"Augmented Deck" buttons → `selectJob()` - Provides deck detail page URL and "Mark Complete" interactive button
+  - "Mark Complete" button → `completeJob()` - Marks selected deck as complete
+  - "Completion List" button → `restoreJob()` - Removes selected deck from completion history
+
+---
+
+# Korean Version (한국어)
 
 ## 개요
 
