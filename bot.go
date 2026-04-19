@@ -46,6 +46,7 @@ func NewTeleBotConfig(token string, chatId int64) *TeleBotConfig {
 }
 
 var candidateDeckMap map[string]string = map[string]string{}
+var doneDeckMap map[string]string = map[string]string{}
 
 // todo deck index +1
 func (t TeleBot) Run() { // channel 받아
@@ -150,16 +151,23 @@ func (t TeleBot) resetJob() { // todo. 지우기전에 한번 물어봐
 	t.SendMessage(fmt.Sprintf("%s 기록 삭제 완료", mode.Str()))
 }
 
-func (t TeleBot) doneJob() { // todo. 지우기전에 한번 물어봐
+func (t TeleBot) doneJob() {
 	mode := t.stg.Mode()
 	doneLi, err := t.stg.All(mode)
 	if err != nil {
 		t.SendMessage(fmt.Sprintf("오류 발생 %s", err.Error()))
 		return
 	}
+	if len(doneLi) == 0 {
+		t.SendMessage("완료된 덱이 없습니다.")
+		return
+	}
 
 	dec := makeDecDone(doneLi)
 	t.sendOptions(&dec)
+	for j := 0; j < len(dec.Rcmds); j++ {
+		doneDeckMap[strconv.Itoa(dec.Ids[j])] = dec.Rcmds[j]
+	}
 
 }
 
@@ -185,9 +193,9 @@ func (t TeleBot) restoreJob(update *tgbotapi.Update) {
 		return
 	}
 
-	restoreTarget := update.CallbackQuery.Data //update.CallbackQuery.Message.Text // todo.이거 Text 부분 가져오는거 맞는지 확인
+	doneNum := update.CallbackQuery.Data
 	mode := t.stg.Mode()
-	t.stg.DeleteByName(mode, restoreTarget)
+	t.stg.DeleteByName(mode, doneDeckMap[doneNum])
 }
 
 func (t TeleBot) selectJob(update *tgbotapi.Update) {

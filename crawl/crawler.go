@@ -37,7 +37,6 @@ func New() *Crawler {
 	crawler.refreshTime = make(map[lolcheBot.Mode]time.Time)
 
 	go func() {
-		fmt.Println("HELLO1")
 		crawler.cleanCache()
 	}()
 	return crawler
@@ -46,7 +45,6 @@ func New() *Crawler {
 func (c *Crawler) cleanCache() {
 	for {
 		for key := range c.deckCache {
-			fmt.Println("HELLO2")
 			if len(c.deckCache[key]) != 0 && c.refreshTime[key].Before(time.Now().Add(time.Minute*-5)) {
 				c.deckCache[key] = nil
 				fmt.Println("CLEAR")
