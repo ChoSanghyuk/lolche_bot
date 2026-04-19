@@ -185,7 +185,7 @@ func (t TeleBot) restoreJob(update *tgbotapi.Update) {
 		return
 	}
 
-	restoreTarget := update.CallbackQuery.Message.Text // todo.이거 Text 부분 가져오는거 맞는지 확인
+	restoreTarget := update.CallbackQuery.Data //update.CallbackQuery.Message.Text // todo.이거 Text 부분 가져오는거 맞는지 확인
 	mode := t.stg.Mode()
 	t.stg.DeleteByName(mode, restoreTarget)
 }
